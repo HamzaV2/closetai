@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Sparkles, Layers } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -19,6 +20,9 @@ import { FeedbackDialog } from '@/components/feedback-dialog';
 import { OutfitPreviewDialog } from '@/components/outfit-preview-dialog';
 import { Pairing } from '@/lib/types';
 import { Outfit } from '@/lib/hooks/use-outfits';
+import { useCreateTryOn3DJob } from '@/lib/hooks/use-tryon3d';
+import { useUserProfile } from '@/lib/hooks/use-user';
+import { toast } from 'sonner';
 
 function EmptyPairings() {
   return (
@@ -68,17 +72,39 @@ function LoadingSkeleton() {
 }
 
 export default function PairingsPage() {
+  const router = useRouter();
   const [page, setPage] = useState(1);
   const [sourceType, setSourceType] = useState<string | undefined>(undefined);
   const [feedbackOutfit, setFeedbackOutfit] = useState<Outfit | null>(null);
   const [previewOutfit, setPreviewOutfit] = useState<Outfit | null>(null);
+  const [generatingForPairingId, setGeneratingForPairingId] = useState<string | null>(null);
 
   const { data, isLoading, isError } = usePairings(page, 20, sourceType);
   const { data: itemTypes } = useItemTypes();
+  const { data: userProfile } = useUserProfile();
+  const createTryOn3DJob = useCreateTryOn3DJob();
 
   const handleSourceTypeChange = (value: string) => {
     setSourceType(value === 'all' ? undefined : value);
     setPage(1);
+  };
+
+  const handleGenerate3D = async (pairing: Pairing) => {
+    if (!userProfile?.tryon_model_image_url) {
+      toast.error('Please upload a Try-On Model Photo in Settings first.');
+      router.push('/dashboard/settings');
+      return;
+    }
+
+    try {
+      setGeneratingForPairingId(pairing.id);
+      const job = await createTryOn3DJob.mutateAsync({ outfitId: pairing.id });
+      router.push(`/dashboard/pairings/${pairing.id}/3d?jobId=${job.id}`);
+    } catch (error) {
+      toast.error('Failed to start 3D generation for this pairing.');
+    } finally {
+      setGeneratingForPairingId(null);
+    }
   };
 
   if (isError) {
@@ -140,6 +166,10 @@ export default function PairingsPage() {
                 pairing={pairing}
                 onFeedback={() => setFeedbackOutfit(pairing as unknown as Outfit)}
                 onPreview={() => setPreviewOutfit(pairing as unknown as Outfit)}
+                onGenerate3D={() => handleGenerate3D(pairing)}
+                isGenerating3D={
+                  createTryOn3DJob.isPending && generatingForPairingId === pairing.id
+                }
               />
             ))}
           </div>

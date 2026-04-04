@@ -13,6 +13,7 @@ from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.config import get_settings
 from app.database import get_db
 from app.models.item import ClothingItem
 from app.models.outfit import FamilyOutfitRating, Outfit, OutfitItem, OutfitStatus, UserFeedback
@@ -30,6 +31,7 @@ from app.utils.signed_urls import sign_image_url
 from app.workers.settings import get_redis_settings
 
 logger = logging.getLogger(__name__)
+settings = get_settings()
 
 
 def get_user_today(user: User) -> date:

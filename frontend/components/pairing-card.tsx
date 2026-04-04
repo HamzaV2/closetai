@@ -1,6 +1,6 @@
 'use client';
 
-import { Trash2, Star, Sparkles } from 'lucide-react';
+import { Trash2, Star, Sparkles, Box } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -28,9 +28,17 @@ interface PairingCardProps {
   pairing: Pairing;
   onFeedback?: () => void;
   onPreview?: () => void;
+  onGenerate3D?: () => void;
+  isGenerating3D?: boolean;
 }
 
-export function PairingCard({ pairing, onFeedback, onPreview }: PairingCardProps) {
+export function PairingCard({
+  pairing,
+  onFeedback,
+  onPreview,
+  onGenerate3D,
+  isGenerating3D = false,
+}: PairingCardProps) {
   const deletePairing = useDeletePairing();
 
   const handleDelete = async () => {
@@ -174,8 +182,20 @@ export function PairingCard({ pairing, onFeedback, onPreview }: PairingCardProps
         )}
 
         {/* Feedback button */}
-        {pairing.status === 'accepted' && onFeedback && (
-          <div className="mt-auto pt-3">
+        <div className="mt-auto pt-3 space-y-2">
+          {onGenerate3D && (
+            <Button
+              size="sm"
+              variant="default"
+              className="w-full h-8 text-xs"
+              onClick={onGenerate3D}
+              disabled={isGenerating3D}
+            >
+              <Box className="h-3 w-3 mr-1" />
+              {isGenerating3D ? 'Starting 3D...' : 'Generate 3D model'}
+            </Button>
+          )}
+          {pairing.status === 'accepted' && onFeedback && (
             <Button
               size="sm"
               variant="outline"
@@ -185,8 +205,8 @@ export function PairingCard({ pairing, onFeedback, onPreview }: PairingCardProps
               <Star className="h-3 w-3 mr-1" />
               {pairing.feedback?.rating ? 'Update Rating' : 'Rate This Pairing'}
             </Button>
-          </div>
-        )}
+          )}
+        </div>
       </CardContent>
     </Card>
   );
